@@ -4,12 +4,6 @@ variable "aws_region" {
     default     = "eu-central-1"
 }
 
-variable "vpc_id" {
-    description = "The ID of the existing VPC" 
-    type        = string
-    default = "vpc-09305c0e6f4405f3e"
-}
-
 variable "ami_id" {
   description = "AMI ID to use for instances"
   type        = string
@@ -62,4 +56,16 @@ variable "jenkins_gitlab_ports" {
   description = "List of ports for jankins and gitlab instances ingress rules"
   type        = list(any)
   default     = [22, 80, 443, 2424, 8080]
+}
+
+variable "vpc_cidr" {
+  description = "VPC CIDR blocks"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "azs" {
+  description = "availabilty zones for vpc"
+  type        = string
+  default     = "eu-central-1b"
 }

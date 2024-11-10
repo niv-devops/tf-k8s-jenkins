@@ -12,46 +12,42 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_vpc" "selected_vpc" {
-  id = var.vpc_id  
+module "vpc" {
+  source   = "./modules/vpc"
+  vpc_cidr = var.vpc_cidr
+  azs      = var.azs
 }
 
 resource "aws_security_group" "k8s_control_plane_sg" {
   name        = "k8s_control_plane_sg"
-  vpc_id      = data.aws_vpc.selected_vpc.id
+  vpc_id      = module.vpc.vpc_id
   description = "k8s control plane sg"
-
   dynamic "ingress" {
     for_each = var.control_plane_ports
-
     content {
       from_port   = ingress.value
       to_port     = ingress.value
       protocol    = var.protocol_sg
-      cidr_blocks = [data.aws_vpc.selected_vpc.cidr_block] 
+      cidr_blocks = [var.vpc_cidr] 
     }
   }
 }
 
 resource "aws_security_group" "k8s_worker_sg" {
   name        = "k8s_worker_sg"
-  vpc_id      = data.aws_vpc.selected_vpc.id
+  vpc_id      = module.vpc.vpc_id
   description = "k8s workers sg"
-
   dynamic "ingress" {
     for_each = var.worker_ports
-
     content {
       from_port   = ingress.value
       to_port     = ingress.value
       protocol    = var.protocol_sg
-      cidr_blocks = [data.aws_vpc.selected_vpc.cidr_block] 
+      cidr_blocks = [var.vpc_cidr] 
     }
   }
-
   dynamic "ingress" {
     for_each = [30000]
-
     content {
       from_port   = 30000
       to_port     = 32767
@@ -63,85 +59,72 @@ resource "aws_security_group" "k8s_worker_sg" {
 
 resource "aws_security_group" "jenkins_gitlab_sg" {
   name        = "jenkins_gitlab_sg"
-  vpc_id      = data.aws_vpc.selected_vpc.id
+  vpc_id      = module.vpc.vpc_id
   description = "jenkins gitlab sg"
-
   dynamic "ingress" {
     for_each = var.jenkins_gitlab_ports
-
     content {
       from_port   = ingress.value
       to_port     = ingress.value
       protocol    = var.protocol_sg
-      cidr_blocks = [data.aws_vpc.selected_vpc.cidr_block] 
-    }
-    
+      cidr_blocks = [var.vpc_cidr] 
+    } 
   }
 }
 
 resource "aws_instance" "k8s_master" {
   ami           = var.ami_id
   instance_type = var.small_instance_type
-
   tags = {
     Name = "k8s_master"
   }
-
   key_name = var.ssh_key_name
-
   vpc_security_group_ids = [aws_security_group.k8s_control_plane_sg.id]
+  subnet_id = module.vpc.private_subnets
 }
 
 resource "aws_instance" "k8s_worker" {
   ami           = var.ami_id
   instance_type = var.k8s_worker_instance_type
   count         = 2
-
   tags = {
     Name = "k8s_worker"
   }
-
   key_name = var.ssh_key_name
-
   vpc_security_group_ids = [aws_security_group.k8s_worker_sg.id]
+  subnet_id = module.vpc.private_subnets
 }
 
 resource "aws_instance" "jenkins_controller" {
   ami           = var.ami_id
   instance_type = var.small_instance_type
-
   tags = {
     Name = "jenkins_controller"
   }
-
   key_name = var.ssh_key_name
-
   vpc_security_group_ids = [aws_security_group.jenkins_gitlab_sg.id]
+  subnet_id = module.vpc.public_subnets
 }
 
 resource "aws_instance" "jenkins_agent" {
   ami           = var.ami_id
   instance_type = var.small_instance_type
   count         = 2
-
   tags = {
     Name = "jenkins_agent"
   }
-
   key_name = var.ssh_key_name
-
   vpc_security_group_ids = [aws_security_group.jenkins_gitlab_sg.id]
+  subnet_id = module.vpc.private_subnets
 }
 
 resource "aws_instance" "gitlab" {
   ami           = var.ami_id
   instance_type = var.gitlab_instance_type
-
   tags = {
     Name = "gitlab"
   }
-
   key_name = var.ssh_key_name
-
   vpc_security_group_ids = [aws_security_group.jenkins_gitlab_sg.id]
+  subnet_id = module.vpc.public_subnets
 }
