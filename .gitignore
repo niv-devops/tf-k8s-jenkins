@@ -1,0 +1,15 @@
+# Ignore all files
+*
+
+# Exclude
+!*.tf
+!*.yaml
+!*.yml
+!*.py
+!*.md
+!.gitignore
+!README
+!LICENSE
+
+# Ignore virtual env
+.venv
