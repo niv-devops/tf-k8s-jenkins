@@ -1,7 +1,7 @@
 variable "aws_region" {
-    description = "AWS region" 
-    type        = string 
-    default     = "eu-central-1"
+  description = "AWS region"
+  type        = string
+  default     = "eu-central-1"
 }
 
 variable "ami_id" {
@@ -11,7 +11,7 @@ variable "ami_id" {
 }
 
 variable "ssh_key_name" {
-  description = "key name to connect to isntance"
+  description = "Key name to connect to instance"
   type        = string
   default     = "k8s"
 }
@@ -53,7 +53,7 @@ variable "worker_ports" {
 }
 
 variable "jenkins_gitlab_ports" {
-  description = "List of ports for jankins and gitlab instances ingress rules"
+  description = "List of ports for Jenkins and GitLab instances ingress rules"
   type        = list(any)
   default     = [22, 80, 443, 2424, 8080]
 }
@@ -64,8 +64,20 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
+variable "public_subnet_cidr" {
+  description = "CIDR blocks for public subnets"
+  type        = list(string)
+  default     = ["10.0.0.0/24", "10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable "private_subnet_cidr" {
+  description = "CIDR blocks for private subnets"
+  type        = list(string)
+  default     = ["10.0.3.0/24", "10.0.4.0/24", "10.0.5.0/24"]
+}
+
 variable "azs" {
-  description = "availabilty zones for vpc"
-  type        = string
-  default     = "eu-central-1b"
+  description = "Availability zones for the VPC"
+  type        = list(string)
+  default     = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
 }
