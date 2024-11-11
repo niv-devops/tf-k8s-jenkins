@@ -8,6 +8,7 @@
 !*.yml
 !*.py
 !*.md
+!*.html
 !.gitignore
 !README
 !LICENSE
