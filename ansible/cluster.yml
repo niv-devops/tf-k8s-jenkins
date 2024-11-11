@@ -1,5 +1,5 @@
 ---
-- hosts: ec2_instances
+- hosts: k8s_cluster
   become: yes
   tasks:
     - name: Update package index
