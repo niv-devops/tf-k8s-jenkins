@@ -1,6 +1,9 @@
 ---
-- hosts: k8s_cluster
+- name: Install and Configure k8s_cluster
+  hosts: k8s_cluster
   become: yes
+  vars:
+    CRIO_VERSION: "1.31"
   tasks:
     - name: Update package index
       apt:
@@ -17,16 +20,23 @@
           - gpg
         state: present
 
-    - name: Add CRI-O GPG key
-      command: curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ CRIO_VERSION }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
-      args:
-        warn: false
+    - name: Add the CRI-O GPG key
+      command: curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg -o /tmp/cri-o-Release.key
+
+    - name: Convert CRI-O GPG key to keyring format
+      command: gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg /tmp/cri-o-Release.key
       when: ansible_distribution == 'Ubuntu'
 
-    - name: Add CRI-O APT repository
+    - name: Add the CRI-O APT repository
       copy:
-        content: "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/{{ CRIO_VERSION }}/deb/ /\n"
+        content: |
+          deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Ubuntu_$(lsb_release -cs)/ /
         dest: /etc/apt/sources.list.d/cri-o.list
+
+    - name: Update package list
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
     - name: Install CRI-O
       apt:
@@ -68,10 +78,11 @@
     - name: Apply sysctl parameters without reboot
       command: sysctl --system
 
-    - name: Add Kubernetes GPG key
-      command: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-      args:
-        warn: false
+    - name: Download Kubernetes GPG key
+      command: curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg -o /tmp/kubernetes-Release.key
+
+    - name: Convert Kubernetes GPG key to keyring format
+      command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-Release.key
 
     - name: Add Kubernetes APT repository
       copy:

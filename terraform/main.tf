@@ -33,6 +33,16 @@ resource "aws_security_group" "k8s_control_plane_sg" {
       cidr_blocks = [var.vpc_cidr]
     }
   }
+  #sharon edit here
+  dynamic "ingress" {
+    for_each = var.open_to_all_ports
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = var.protocol_sg
+      cidr_blocks = [var.my_ip]
+    }
+  }
 }
 
 resource "aws_security_group" "k8s_worker_sg" {
@@ -54,7 +64,7 @@ resource "aws_security_group" "k8s_worker_sg" {
       from_port   = 30000
       to_port     = 32767
       protocol    = var.protocol_sg
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = [var.my_ip]
     }
   }
 }
@@ -64,12 +74,12 @@ resource "aws_security_group" "jenkins_gitlab_sg" {
   vpc_id      = module.vpc.vpc_id
   description = "jenkins gitlab sg"
   dynamic "ingress" {
-    for_each = var.jenkins_gitlab_ports
+    for_each = var.open_to_all_ports
     content {
       from_port   = ingress.value
       to_port     = ingress.value
       protocol    = var.protocol_sg
-      cidr_blocks = [var.vpc_cidr]
+      cidr_blocks = [var.my_ip]
     }
   }
 }
@@ -82,7 +92,7 @@ resource "aws_instance" "k8s_master" {
   }
   key_name = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.k8s_control_plane_sg.id]
-  subnet_id = module.vpc.private_subnets[0]  # Select the first private subnet
+  subnet_id = module.vpc.public_subnets[0]
 }
 
 resource "aws_instance" "k8s_worker" {
@@ -94,7 +104,7 @@ resource "aws_instance" "k8s_worker" {
   }
   key_name = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.k8s_worker_sg.id]
-  subnet_id = module.vpc.private_subnets[0]  # Select the first private subnet
+  subnet_id = module.vpc.public_subnets[0]
 }
 
 resource "aws_instance" "jenkins_controller" {
@@ -105,19 +115,18 @@ resource "aws_instance" "jenkins_controller" {
   }
   key_name = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.jenkins_gitlab_sg.id]
-  subnet_id = module.vpc.public_subnets[0]  # Select the first public subnet
+  subnet_id = module.vpc.public_subnets[0]
 }
 
 resource "aws_instance" "jenkins_agent" {
   ami           = var.ami_id
   instance_type = var.small_instance_type
-  count         = 2
   tags = {
     Name = "jenkins_agent"
   }
   key_name = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.jenkins_gitlab_sg.id]
-  subnet_id = module.vpc.private_subnets[0]  # Select the first private subnet
+  subnet_id = module.vpc.public_subnets[0]
 }
 
 resource "aws_instance" "gitlab" {
@@ -128,5 +137,5 @@ resource "aws_instance" "gitlab" {
   }
   key_name = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.jenkins_gitlab_sg.id]
-  subnet_id = module.vpc.public_subnets[0]  # Select the first public subnet
+  subnet_id = module.vpc.public_subnets[0]
 }

@@ -43,19 +43,25 @@ variable "protocol_sg" {
 variable "control_plane_ports" {
   description = "List of ports for control plane instance ingress rules"
   type        = list(any)
-  default     = [22, 80, 6443, 2379, 2380 ,10250, 10259, 10257]
+  default     = [2379, 2380 ,10250, 10259, 10257]
+}
+
+variable "my_ip" {
+  description = "My Ip"
+  type        = string
+  default     = "213.57.121.34/32"
 }
 
 variable "worker_ports" {
   description = "List of ports for worker instance ingress rules"
   type        = list(any)
-  default     = [22, 80, 5000, 10250, 10256]
+  default     = [10250, 10256]
 }
 
-variable "jenkins_gitlab_ports" {
-  description = "List of ports for Jenkins and GitLab instances ingress rules"
+variable "open_to_all_ports" {
+  description = "List of ports for all instances ingress rules"
   type        = list(any)
-  default     = [22, 80, 443, 2424, 8080]
+  default     = [22, 80, 443, 2424, 5000, 8080]
 }
 
 variable "vpc_cidr" {

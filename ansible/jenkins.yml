@@ -4,6 +4,7 @@
   become: yes
   vars:
     docker_compose_version: '1.29.2'
+    jenkins_image: "jenkins/jenkins:lts"
     jenkins_home: "/home/{{ ansible_user }}/jenkins_compose/jenkins_configuration"
   tasks:
     - name: Update APT package index
@@ -64,37 +65,31 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
 
-    - name: Deploy Jenkins using Docker Compose
-      copy:
-        dest: "{{ jenkins_home }}/docker-compose.yml"
-        content: |
-          version: '3.8'
-          services:
-            jenkins:
-              image: jenkins/jenkins:lts
-              privileged: false
-              user: root
-              ports:
-                - "8080:8080"
-                - "50000:50000"
-              container_name: jenkins
-              volumes:
-                - "{{ jenkins_home }}:/var/jenkins_home"
-                - /var/run/docker.sock:/var/run/docker.sock
-      register: compose_file
+    - name: Run Jenkins container
+      docker_container:
+        name: jenkins
+        image: "{{ jenkins_image }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "8080:8080"
+          - "50000:50000"
+        volumes:
+          - "{{ jenkins_home }}:/var/jenkins_home"
+          - "/var/run/docker.sock:/var/run/docker.sock"
+        user: "root"
+        privileged: true
 
-    - name: Start Jenkins container
-      command: docker-compose up -d
-      args:
-        chdir: "{{ jenkins_home }}"
-      when: compose_file.changed
+    - name: Wait for Jenkins to initialize
+      pause:
+        minutes: 1
 
-    - name: Fetch Password
+    - name: Fetch Jenkins initial admin password
       community.docker.docker_container_exec:
         container: jenkins
         command: cat /var/jenkins_home/secrets/initialAdminPassword
       register: jenkins_password
 
-    - name: Show password
+    - name: Display Jenkins initial admin password
       ansible.builtin.debug:
-        var: jenkins_password.stdout
+        msg: "Jenkins Initial Admin Password: {{ jenkins_password.stdout }}"
