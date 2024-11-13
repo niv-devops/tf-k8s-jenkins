@@ -8,8 +8,8 @@ all:
       hosts:
         jenkins_controller:
           ansible_host: 3.75.94.120
-        #jenkins_agent:
-          #ansible_host: 23.22.35.212
+        jenkins_agent:
+          ansible_host: 23.22.35.212
     k8s_cluster:
       hosts:
         control_plane:
